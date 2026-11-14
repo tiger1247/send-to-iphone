@@ -11,7 +11,20 @@ import time
 import uuid
 import zipfile
 
-APP_NAME = "Send to iPhone"
+def is_packaged():
+    """True when running from the MSIX (Microsoft Store) package."""
+    import ctypes
+    length = ctypes.c_uint32(0)
+    try:
+        # Returns APPMODEL_ERROR_NO_PACKAGE (15700) for normal, unpackaged processes.
+        return ctypes.windll.kernel32.GetCurrentPackageFullName(ctypes.byref(length), None) != 15700
+    except (AttributeError, OSError):
+        return False
+
+
+PACKAGED = is_packaged()
+# The Store build is branded PhoneDrop (Apple doesn't allow "iPhone" as an app's main name).
+APP_NAME = "PhoneDrop" if PACKAGED else "Send to iPhone"
 APP_ID = "SendToiPhone"
 DEFAULT_PORT = 8765
 
@@ -79,6 +92,7 @@ class Store:
         self.listeners = []
         self.clip = {"text": "", "ts": 0}
         self.last_phone_seen = 0.0
+        self.locked = False  # True when the Store trial has ended and the app isn't bought
         cfg = {}
         try:
             with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -199,6 +213,8 @@ class Store:
                 "files": [{k: f[k] for k in ("id", "name", "size", "added")} for f in files],
                 "clip": dict(self.clip),
                 "pc": os.environ.get("STP_PC_NAME") or socket.gethostname(),
+                "app": APP_NAME,
+                "locked": self.locked,
             }
 
     # ---- clipboard / misc ---------------------------------------------

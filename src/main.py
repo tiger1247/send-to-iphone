@@ -46,6 +46,8 @@ def forward_to_running(paths, show):
 
 
 def parse_args(argv):
+    # The Store package starts us as "pythonw -m main ..."; drop those bits if they show up.
+    argv = [a for a in argv if a not in ("-m", "main", "-E", "-s")]
     paths = [a for a in argv if not a.startswith("--")]
     return paths, ("--tray" in argv), ("--send" in argv)
 
@@ -78,8 +80,19 @@ class App:
         self.root.minsize(int(700 * self.scale), int(440 * self.scale))
         self._build_ui(DND_FILES)
 
+        import storeapi
+        self.storeapi = storeapi
+        self.lic = storeapi.LicenseWatcher(store, lambda l: self.call(self.on_license, l))
+
         self.tray = pystray.Icon(core.APP_ID, self.icon_img, APP_NAME, menu=self._tray_menu())
         self.tray.run_detached()
+
+        def first_checks():
+            self.lic.refresh(force=True)
+            if core.PACKAGED:
+                self.store.startup = storeapi.startup_enabled()
+                self.tray.update_menu()
+        threading.Thread(target=first_checks, daemon=True).start()
 
         store.listeners.append(lambda ev, p: self.call(self.on_store_event, ev, p))
         self.root.after(100, self._pump)
@@ -115,7 +128,25 @@ class App:
         self._update_status()
         if self.root.state() != "withdrawn":
             self._update_qr()
+        threading.Thread(target=self.lic.refresh, daemon=True).start()  # cheap: rate-limited inside
         self.root.after(2000, self._tick)
+
+    def on_license(self, lic):
+        if lic.state == "full":
+            self.banner.pack_forget()
+        else:
+            if lic.state == "trial":
+                d = lic.days_left
+                text = f"Free trial: {d} day{'s' if d != 1 else ''} left." if d else "Free trial: last day."
+                self.banner.configure(bg="#eef5ff"); self.banner_label.configure(bg="#eef5ff", fg="#0a3d8f")
+            else:
+                text = "Your free trial has ended. Buy PhoneDrop to keep sending files."
+                self.banner.configure(bg="#fff4e5"); self.banner_label.configure(bg="#fff4e5", fg="#7a4b00")
+                self.show()
+            self.banner_label.configure(text=text)
+            self.banner.pack(side="top", fill="x", before=self.outer)
+        self.tray.update_menu()
+        self.refresh()
 
     # ---- UI ----------------------------------------------------------------
     def _build_ui(self, DND_FILES):
@@ -133,8 +164,15 @@ class App:
         style.configure("Wait.TLabel", foreground="#b25000", font=("Segoe UI Semibold", 10))
         style.configure("Treeview", rowheight=int(26 * S))
 
+        # Trial / purchase banner (hidden unless the Store build is on a trial).
+        self.banner = tk.Frame(self.root, bg="#eef5ff", padx=int(16 * S), pady=int(8 * S))
+        self.banner_label = tk.Label(self.banner, text="", bg="#eef5ff", font=("Segoe UI Semibold", 10))
+        self.banner_label.pack(side="left")
+        ttk.Button(self.banner, text="Buy PhoneDrop", command=lambda: self.storeapi.open_store_page()).pack(side="right")
+
         outer = ttk.Frame(self.root, padding=int(16 * S))
         outer.pack(fill="both", expand=True)
+        self.outer = outer
         outer.columnconfigure(1, weight=1)
         outer.rowconfigure(0, weight=1)
 
@@ -226,9 +264,11 @@ class App:
             Item("Send clipboard text to iPhone", lambda: self.call(self.send_clipboard)),
             Item("Open received files", lambda: self.call(self.open_inbox)),
             Menu.SEPARATOR,
+            Item("Buy PhoneDrop…", lambda: self.storeapi.open_store_page(),
+                 visible=lambda i: self.lic.license.state != "full"),
             Item("Start with Windows", lambda: self.call(self.toggle_startup), checked=lambda i: self.store.startup),
             Item("Show in right-click menu", lambda: self.call(self.toggle_menu),
-                 checked=lambda i: self.store.explorer_menu),
+                 checked=lambda i: self.store.explorer_menu, visible=not core.PACKAGED),
             Menu.SEPARATOR,
             Item("Quit", lambda: self.call(self.quit)),
         )
@@ -370,8 +410,15 @@ class App:
         os.startfile(self.store.inbox)
 
     def toggle_startup(self):
-        self.store.startup = not self.store.startup
-        wininteg.set_startup(self.store.startup)
+        want = not self.store.startup
+        if core.PACKAGED:
+            def work():  # the Store API is async and may open Settings; keep the UI responsive
+                self.store.startup = wininteg.set_startup(want)
+                self.tray.update_menu()
+            threading.Thread(target=work, daemon=True).start()
+            return
+        self.store.startup = want
+        wininteg.set_startup(want)
         self.store.save()
         self.tray.update_menu()
 
@@ -399,10 +446,11 @@ def main():
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
         pass
-    try:  # own taskbar identity/icon instead of being grouped as "Python"
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("SendToiPhone.App")
-    except Exception:
-        pass
+    if not core.PACKAGED:  # packaged apps already have their own taskbar identity
+        try:  # own taskbar identity/icon instead of being grouped as "Python"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("SendToiPhone.App")
+        except Exception:
+            pass
 
     if "--uninstall" in argv:
         wininteg.uninstall()
@@ -411,12 +459,14 @@ def main():
         return
 
     paths, tray_only, sending = parse_args(argv)
+    import storeapi
+    tray_only = tray_only or storeapi.launched_at_startup()
     show = not tray_only and not sending
 
     if forward_to_running(paths, show):
         return
 
-    if wininteg.needs_install() and "--portable" not in argv:
+    if wininteg.needs_install() and "--portable" not in argv and not core.PACKAGED:
         if wininteg.install_and_relaunch(argv):
             return
 
@@ -463,7 +513,7 @@ def main():
                 wininteg.create_start_menu_entry()
         except Exception as e:
             print("integration error:", e, file=sys.stderr)
-    if "--no-integrate" not in argv:
+    if "--no-integrate" not in argv and not core.PACKAGED:
         threading.Thread(target=integrate, daemon=True).start()
 
     store.add_paths(paths)

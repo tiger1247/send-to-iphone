@@ -104,6 +104,8 @@ def make_server(store, on_received, on_clip, on_local_show, on_local_quit=lambda
                 return self._json(store.snapshot())
             m = re.fullmatch(r"/f/([0-9a-f]+)(?:/.*)?", path)
             if m:
+                if store.locked:
+                    return self._send(402, LOCKED_PAGE, "text/html; charset=utf-8")
                 return self._serve_file(m.group(1))
             self._send(404, "Not found")
 
@@ -130,6 +132,9 @@ def make_server(store, on_received, on_clip, on_local_show, on_local_quit=lambda
 
             if not self._authed():
                 return self._denied()
+            if store.locked and path in ("/api/upload", "/api/clip"):
+                self.close_connection = True  # don't read a possibly huge body we're rejecting
+                return self._json({"ok": False, "error": "trial_ended"}, 402)
             if path == "/api/upload":
                 return self._upload()
             if path == "/api/clip":
@@ -227,6 +232,13 @@ def make_server(store, on_received, on_clip, on_local_show, on_local_quit=lambda
 
     return Server((os.environ.get("STP_BIND", "0.0.0.0"), store.port), Handler)
 
+
+LOCKED_PAGE = """<!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Trial ended</title>
+<body style="font:17px -apple-system,system-ui,sans-serif;padding:32px;text-align:center;color:#333">
+<h2>Free trial ended</h2>
+<p>Buy PhoneDrop on your PC (Microsoft Store) to keep sending files.</p>
+</body>"""
 
 DENIED_PAGE = """<!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
 <title>Send to iPhone</title>

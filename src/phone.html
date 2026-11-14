@@ -65,9 +65,12 @@
 </head>
 <body>
 <header>
-  <h1>Send to iPhone</h1>
+  <h1 id="apptitle">Send to iPhone</h1>
   <div class="pill" id="pill"><span class="dot"></span><span id="pc">Connecting…</span></div>
 </header>
+<div class="card" id="locked" style="display:none;margin-top:8px;padding:14px 16px;background:#fff4e5;color:#7a4b00">
+  <b>Free trial ended.</b> Buy PhoneDrop on your PC from the Microsoft Store to keep sending files.
+</div>
 
 <h2>From your PC</h2>
 <div class="card" id="files"><div class="empty">Nothing yet. Drag files onto the app on your PC,<br>or right-click a file → <b>Send to iPhone</b>.</div></div>
@@ -132,6 +135,8 @@ async function poll() {
     const s = await r.json();
     failures = 0;
     $("pill").classList.remove("off"); $("pc").textContent = s.pc;
+    if (s.app && $("apptitle").textContent !== s.app) { $("apptitle").textContent = s.app; document.title = s.app; }
+    $("locked").style.display = s.locked ? "" : "none";
     if (s.v !== version) {
       version = s.v; render(s.files);
       if (s.clip && s.clip.text !== clipText) {
@@ -171,7 +176,8 @@ function next() {
   xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
   xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) { const p = ev.loaded / ev.total * 100; bar.style.width = p + "%"; sub.textContent = `${size(ev.loaded)} of ${size(ev.total)}`; } };
   xhr.onload = () => {
-    if (xhr.status === 200) { row.classList.add("done"); bar.style.width = "100%"; sub.textContent = "Sent to PC ✓"; }
+    if (xhr.status === 402) { row.classList.add("fail"); sub.textContent = "Trial ended — buy PhoneDrop on your PC"; }
+    else if (xhr.status === 200) { row.classList.add("done"); bar.style.width = "100%"; sub.textContent = "Sent to PC ✓"; }
     else { row.classList.add("fail"); sub.textContent = "Failed — try again"; }
     busy = false; next();
   };

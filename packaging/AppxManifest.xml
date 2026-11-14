@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PhoneDrop MSIX manifest. The double-brace placeholders are filled in by packaging/build_msix.py.
+  For the Store build, IDENTITY_NAME / PUBLISHER / PUBLISHER_DISPLAY come from
+  Partner Center → your app → Product identity.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap2="http://schemas.microsoft.com/appx/manifest/uap/windows10/2"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop2="http://schemas.microsoft.com/appx/manifest/desktop/windows10/2"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap2 uap3 uap10 desktop desktop2 rescap">
+
+  <Identity Name="{{IDENTITY_NAME}}" Publisher="{{PUBLISHER}}" Version="{{VERSION}}" ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>PhoneDrop</DisplayName>
+    <PublisherDisplayName>{{PUBLISHER_DISPLAY}}</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="PhoneDrop" Executable="python\pythonw.exe" EntryPoint="Windows.FullTrustApplication"
+                 uap10:Parameters="-m main">
+      <uap:VisualElements
+        DisplayName="PhoneDrop"
+        Description="Send files between your PC and iPhone over Wi-Fi. Nothing to install on the iPhone."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" ShortName="PhoneDrop" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- Start with Windows (user can turn it off in the tray menu or Settings → Apps → Startup). -->
+        <desktop:Extension Category="windows.startupTask" Executable="python\pythonw.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="PhoneDropStartup" Enabled="true" DisplayName="PhoneDrop" />
+        </desktop:Extension>
+
+        <!-- Right-click a file → "Send to iPhone (PhoneDrop)" (under "Show more options" on Windows 11). -->
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation Name="phonedrop.files">
+            <uap:DisplayName>Files for PhoneDrop</uap:DisplayName>
+            <uap:SupportedFileTypes>
+{{FILE_TYPES}}
+            </uap:SupportedFileTypes>
+            <uap2:SupportedVerbs>
+              <uap3:Verb Id="sendtoiphone" Parameters="-m main --send &quot;%1&quot;">Send to iPhone (PhoneDrop)</uap3:Verb>
+            </uap2:SupportedVerbs>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Extensions>
+    <!-- Lets the iPhone reach PhoneDrop on home/private Wi-Fi without a firewall prompt. -->
+    <desktop2:Extension Category="windows.firewallRules">
+      <desktop2:FirewallRules Executable="python\pythonw.exe">
+        <desktop2:Rule Direction="in" IPProtocol="TCP" LocalPortMin="8765" LocalPortMax="8765" Profile="private" />
+      </desktop2:FirewallRules>
+    </desktop2:Extension>
+  </Extensions>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <Capability Name="privateNetworkClientServer" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

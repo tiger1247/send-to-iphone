@@ -8,6 +8,7 @@ import subprocess
 import sys
 import winreg
 
+import core
 from core import APP_ID, APP_NAME
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
@@ -39,6 +40,8 @@ def icon_path():
 
 # ---- Explorer right-click menu ------------------------------------------
 def set_explorer_menu(enabled):
+    if core.PACKAGED:
+        return  # the Store package declares its right-click verbs in AppxManifest.xml
     for key in MENU_KEYS:
         if enabled:
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key) as k:
@@ -66,6 +69,9 @@ def set_explorer_menu(enabled):
 
 # ---- Start with Windows -------------------------------------------------
 def set_startup(enabled):
+    if core.PACKAGED:
+        import storeapi
+        return storeapi.set_startup_enabled(enabled)
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
         if enabled:
             winreg.SetValueEx(k, APP_ID, 0, winreg.REG_SZ, subprocess.list2cmdline(launch_parts() + ["--tray"]))
