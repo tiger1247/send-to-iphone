@@ -13,7 +13,7 @@ import time
 import core
 
 # Fill in after reserving the name in Partner Center (Product identity → Store ID, e.g. 9NBLGGH4R315).
-STORE_PRODUCT_ID = ""
+STORE_PRODUCT_ID = "9NC591X3B2G7"
 STARTUP_TASK_ID = "PhoneDropStartup"
 
 

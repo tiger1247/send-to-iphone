@@ -100,7 +100,8 @@ def write_manifest(cfg):
     with open(os.path.join(ROOT, "packaging", "AppxManifest.xml"), encoding="utf-8") as f:
         xml = f.read()
     for key, val in (("IDENTITY_NAME", cfg["identity_name"]), ("PUBLISHER", cfg["publisher"]),
-                     ("PUBLISHER_DISPLAY", cfg["publisher_display"]), ("VERSION", cfg["version"])):
+                     ("PUBLISHER_DISPLAY", cfg["publisher_display"]), ("VERSION", cfg["version"]),
+                     ("DISPLAY_NAME", cfg["display_name"])):
         xml = xml.replace("{{" + key + "}}", val)
     assert "{{" not in xml, "unfilled placeholder in manifest"
     with open(os.path.join(LAYOUT, "AppxManifest.xml"), "w", encoding="utf-8") as f:
@@ -114,7 +115,7 @@ def main():
     args = ap.parse_args()
 
     cfg = {"identity_name": "PhoneDrop.Dev", "publisher": "CN=PhoneDropDev",
-           "publisher_display": "PhoneDrop (dev build)", "version": "1.0.0.0"}
+           "publisher_display": "PhoneDrop (dev build)", "display_name": "PhoneDrop", "version": "1.0.0.0"}
     if args.store:
         with open(args.store, encoding="utf-8") as f:
             cfg.update(json.load(f))

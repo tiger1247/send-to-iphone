@@ -3,7 +3,7 @@
 Paste these into Partner Center → your app → **Store listings → English (United States)**.
 
 ## Product name
-PhoneDrop
+PhoneDrop - File Transfer   (reserved in Partner Center; Store ID 9NC591X3B2G7. "PhoneDrop" alone was taken.)
 
 ## Short description (up to 270 characters, shown at the top of the listing)
 Send photos, videos and files between your Windows PC and iPhone over Wi-Fi. No app, cable or account is needed on the iPhone: scan a QR code once and Safari becomes your transfer page.
