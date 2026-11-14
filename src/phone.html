@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Send to iPhone">
+<meta name="theme-color" content="#0a84ff">
+<title>Send to iPhone</title>
+<style>
+  :root {
+    --bg: #f2f2f7; --card: #fff; --text: #1c1c1e; --muted: #6e6e73; --line: #e5e5ea;
+    --accent: #0a84ff; --accent-text: #fff; --ok: #30a14e; --danger: #d70015; --soft: #eef5ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #000; --card: #1c1c1e; --text: #f2f2f7; --muted: #98989f; --line: #2c2c2e;
+            --soft: #0b2545; --ok: #32d74b; --danger: #ff453a; }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+         padding: env(safe-area-inset-top) 16px calc(32px + env(safe-area-inset-bottom)); }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 18px 2px 10px; }
+  h1 { font-size: 28px; margin: 0; letter-spacing: -.5px; }
+  .pill { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+  .pill.off .dot { background: var(--danger); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted);
+       font-weight: 600; margin: 22px 4px 8px; }
+  .card { background: var(--card); border-radius: 14px; overflow: hidden; }
+  .empty { padding: 22px 16px; color: var(--muted); text-align: center; font-size: 15px; }
+  .item { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; border-top: 1px solid var(--line); }
+  .item:first-child { border-top: 0; }
+  .thumb { width: 44px; height: 44px; border-radius: 9px; background: var(--soft); flex: none;
+           display: grid; place-items: center; font-size: 22px; overflow: hidden; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .meta { flex: 1; min-width: 0; }
+  .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .name { white-space: normal; word-break: break-word; display: -webkit-box;
+                -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 15px; }
+  .item .btn { padding: 8px 11px; }
+  .sub { font-size: 13px; color: var(--muted); }
+  .btn { appearance: none; border: 0; border-radius: 10px; padding: 9px 13px; font: 600 15px inherit;
+         font-family: inherit; background: var(--soft); color: var(--accent); text-decoration: none;
+         display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+  .btn.primary { background: var(--accent); color: var(--accent-text); }
+  .btn.big { width: 100%; padding: 16px; font-size: 17px; border-radius: 14px; }
+  .btn.x { background: none; color: var(--muted); padding: 8px; font-size: 20px; line-height: 1; }
+  .actions { display: flex; gap: 6px; align-items: center; }
+  .hint { font-size: 13px; color: var(--muted); margin: 8px 4px 0; }
+  .up { padding: 10px 14px; border-top: 1px solid var(--line); font-size: 14px; }
+  .bar { height: 5px; background: var(--line); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .up.done .bar i { background: var(--ok); } .up.fail .bar i { background: var(--danger); }
+  textarea { width: 100%; border: 0; background: transparent; color: var(--text); font: 16px inherit;
+             font-family: inherit; padding: 14px; resize: vertical; min-height: 84px; outline: none; display: block; }
+  .row { display: flex; gap: 8px; padding: 0 12px 12px; justify-content: flex-end; }
+  .clipbox { padding: 14px; white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow: auto; }
+  input[type=file] { display: none; }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+           background: rgba(30,30,30,.92); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 15px;
+           opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 90%; text-align: center; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Send to iPhone</h1>
+  <div class="pill" id="pill"><span class="dot"></span><span id="pc">Connecting…</span></div>
+</header>
+
+<h2>From your PC</h2>
+<div class="card" id="files"><div class="empty">Nothing yet. Drag files onto the app on your PC,<br>or right-click a file → <b>Send to iPhone</b>.</div></div>
+<p class="hint">“Save” puts the file in the Files app → Downloads. For photos and videos, tap “Open”, then long-press or use Share → Save to Photos.</p>
+
+<h2>Send to your PC</h2>
+<label class="btn primary big" for="pick">Choose photos or files…</label>
+<input type="file" id="pick" multiple>
+<div class="card" id="uploads" style="margin-top:10px;display:none"></div>
+<p class="hint">Keep this page open until uploads finish.</p>
+
+<h2>Clipboard</h2>
+<div class="card">
+  <div class="clipbox" id="pcclip" style="color:var(--muted)">Nothing sent from the PC yet.</div>
+  <div class="row"><button class="btn" id="copy">Copy</button></div>
+</div>
+<div class="card" style="margin-top:10px">
+  <textarea id="mytext" placeholder="Type or paste text to send to your PC’s clipboard…"></textarea>
+  <div class="row"><button class="btn primary" id="sendtext">Send to PC</button></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let version = -1, failures = 0, clipText = "";
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function size(n) { const u = ["B","KB","MB","GB"]; let i = 0; while (n >= 1024 && i < 3) { n /= 1024; i++; } return (i ? n.toFixed(1) : n) + " " + u[i]; }
+function ago(t) { const s = Date.now()/1000 - t; if (s < 60) return "just now"; if (s < 3600) return Math.floor(s/60) + " min ago";
+  if (s < 86400) return Math.floor(s/3600) + " h ago"; return new Date(t*1000).toLocaleDateString(); }
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2200); }
+function kind(name) { const e = name.split(".").pop().toLowerCase();
+  if (["jpg","jpeg","png","gif","webp","heic","bmp"].includes(e)) return "img";
+  if (["mp4","mov","m4v","webm"].includes(e)) return "vid";
+  if (["mp3","m4a","wav","aac","flac"].includes(e)) return "aud";
+  if (e === "pdf") return "pdf"; if (e === "zip") return "zip"; return "doc"; }
+const ICON = { vid: "🎬", aud: "🎵", pdf: "📕", zip: "🗂️", doc: "📄", img: "🖼️" };
+
+function render(files) {
+  const box = $("files");
+  if (!files.length) { box.innerHTML = '<div class="empty">Nothing yet. Drag files onto the app on your PC,<br>or right-click a file → <b>Send to iPhone</b>.</div>'; return; }
+  box.innerHTML = files.map(f => {
+    const url = "/f/" + f.id + "/" + encodeURIComponent(f.name), k = kind(f.name);
+    const thumb = k === "img" && f.size < 15e6 ? `<img src="${url}" loading="lazy" alt="">` : ICON[k];
+    return `<div class="item">
+      <div class="thumb">${thumb}</div>
+      <div class="meta"><div class="name">${esc(f.name)}</div><div class="sub">${size(f.size)} · ${ago(f.added)}</div></div>
+      <div class="actions">
+        <a class="btn" href="${url}" target="_blank">Open</a>
+        <a class="btn primary" href="${url}?dl=1" download="${esc(f.name)}">Save</a>
+        <button class="btn x" data-rm="${f.id}" aria-label="Remove">×</button>
+      </div></div>`;
+  }).join("");
+}
+
+async function poll() {
+  if (document.hidden) return;
+  try {
+    const r = await fetch("/api/state", { cache: "no-store" });
+    if (r.status === 403) { location.reload(); return; }
+    const s = await r.json();
+    failures = 0;
+    $("pill").classList.remove("off"); $("pc").textContent = s.pc;
+    if (s.v !== version) {
+      version = s.v; render(s.files);
+      if (s.clip && s.clip.text !== clipText) {
+        clipText = s.clip.text;
+        const b = $("pcclip"); b.textContent = clipText || "Nothing sent from the PC yet."; b.style.color = clipText ? "" : "var(--muted)";
+      }
+    }
+  } catch (e) {
+    if (++failures > 1) { $("pill").classList.add("off"); $("pc").textContent = "PC not reachable"; }
+  }
+}
+setInterval(poll, 2000); poll();
+document.addEventListener("visibilitychange", poll);
+
+$("files").addEventListener("click", async (e) => {
+  const id = e.target.dataset && e.target.dataset.rm; if (!id) return;
+  await fetch("/api/remove/" + id, { method: "POST" }); version = -1; poll();
+});
+
+// ---- uploads: one at a time, raw body (fast + low memory) ----
+const queue = []; let busy = false;
+$("pick").addEventListener("change", (e) => {
+  const box = $("uploads"); box.style.display = "";
+  for (const file of e.target.files) {
+    const row = document.createElement("div"); row.className = "up";
+    row.innerHTML = `<div class="name">${esc(file.name)}</div><div class="sub">${size(file.size)} · waiting…</div><div class="bar"><i></i></div>`;
+    box.prepend(row); queue.push({ file, row });
+  }
+  e.target.value = ""; next();
+});
+function next() {
+  if (busy || !queue.length) return;
+  busy = true;
+  const { file, row } = queue.shift(), sub = row.querySelector(".sub"), bar = row.querySelector("i");
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", "/api/upload");
+  xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
+  xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) { const p = ev.loaded / ev.total * 100; bar.style.width = p + "%"; sub.textContent = `${size(ev.loaded)} of ${size(ev.total)}`; } };
+  xhr.onload = () => {
+    if (xhr.status === 200) { row.classList.add("done"); bar.style.width = "100%"; sub.textContent = "Sent to PC ✓"; }
+    else { row.classList.add("fail"); sub.textContent = "Failed — try again"; }
+    busy = false; next();
+  };
+  xhr.onerror = () => { row.classList.add("fail"); sub.textContent = "Connection lost — try again"; busy = false; next(); };
+  xhr.send(file);
+}
+
+// ---- clipboard ----
+$("sendtext").addEventListener("click", async () => {
+  const t = $("mytext").value; if (!t.trim()) return;
+  const r = await fetch("/api/clip", { method: "POST", body: t, headers: { "Content-Type": "text/plain;charset=utf-8" } });
+  if (r.ok) { toast("Copied to your PC’s clipboard"); $("mytext").value = ""; }
+});
+$("copy").addEventListener("click", async () => {
+  if (!clipText) return;
+  try { await navigator.clipboard.writeText(clipText); toast("Copied"); return; } catch (e) {}
+  // Fallback for plain-http pages, where the async clipboard API isn't available.
+  const ta = document.createElement("textarea"); ta.value = clipText; ta.setAttribute("readonly", "");
+  ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta);
+  ta.focus(); ta.setSelectionRange(0, clipText.length);
+  const ok = document.execCommand("copy"); ta.remove(); toast(ok ? "Copied" : "Long-press the text to copy");
+});
+</script>
+</body>
+</html>
