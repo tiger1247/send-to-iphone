@@ -105,16 +105,77 @@ def set_startup_enabled(enabled):
 
 
 # ---- activation --------------------------------------------------------------
+_activation = {}
+
+
+def _activated_args():
+    if "args" not in _activation:
+        _activation["args"] = None
+        if core.PACKAGED:
+            try:
+                from winrt.windows.applicationmodel import AppInstance
+                _activation["args"] = AppInstance.get_activated_event_args()
+            except Exception:
+                pass
+    return _activation["args"]
+
+
 def launched_at_startup():
-    if not core.PACKAGED:
-        return False
+    args = _activated_args()
     try:
-        from winrt.windows.applicationmodel import AppInstance
         from winrt.windows.applicationmodel.activation import ActivationKind
-        args = AppInstance.get_activated_event_args()
         return args is not None and args.kind == ActivationKind.STARTUP_TASK
     except Exception:
         return False
+
+
+def take_share():
+    """If Windows launched us from the Share menu, return (paths, text); else None.
+
+    Reads the shared data and tells Windows the share is complete (closes the Share UI).
+    """
+    args = _activated_args()
+    try:
+        from winrt.windows.applicationmodel.activation import ActivationKind, ShareTargetActivatedEventArgs
+        from winrt.windows.applicationmodel.datatransfer import StandardDataFormats
+        if args is None or args.kind != ActivationKind.SHARE_TARGET:
+            return None
+        op = ShareTargetActivatedEventArgs._from(args).share_operation
+        data = op.data
+
+        async def read():
+            import shutil
+            paths, text = [], ""
+            if data.contains(StandardDataFormats.storage_items):
+                os.makedirs(core.TEMP_DIR, exist_ok=True)
+                for item in await data.get_storage_items_async():
+                    p = item.path
+                    volatile = (not p) or any(s in p.lower() for s in ("\\temp\\", "\\appdata\\local\\packages\\"))
+                    if not volatile:
+                        paths.append(p)
+                        continue
+                    # Shared from an app (e.g. Photos) as a temporary or virtual file: keep our own copy.
+                    dest = core.unique_path(core.TEMP_DIR, core.safe_filename(item.name))
+                    if p and os.path.isfile(p):
+                        shutil.copy2(p, dest)
+                    else:
+                        from winrt.windows.storage import StorageFile, StorageFolder, NameCollisionOption
+                        folder = await StorageFolder.get_folder_from_path_async(core.TEMP_DIR)
+                        copied = await StorageFile._from(item).copy_async(
+                            folder, os.path.basename(dest), NameCollisionOption.GENERATE_UNIQUE_NAME)
+                        dest = copied.path
+                    paths.append(dest)
+            if data.contains(StandardDataFormats.web_link):
+                text = (await data.get_web_link_async()).absolute_uri
+            elif data.contains(StandardDataFormats.text):
+                text = await data.get_text_async()
+            return paths, text
+
+        paths, text = _run(read())
+        op.report_completed()
+        return paths, text
+    except Exception:
+        return None
 
 
 class LicenseWatcher:

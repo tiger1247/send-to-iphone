@@ -29,7 +29,7 @@ def configured_port():
         return core.DEFAULT_PORT
 
 
-def forward_to_running(paths, show):
+def forward_to_running(paths, show, text=""):
     """If a copy is already running, hand it our work and return True."""
     base = f"http://127.0.0.1:{configured_port()}"
     try:
@@ -37,7 +37,7 @@ def forward_to_running(paths, show):
             if r.read() != b"send-to-iphone-ok":
                 return False
         req = urllib.request.Request(
-            base + "/local/add", data=json.dumps({"paths": paths, "show": show}).encode(),
+            base + "/local/add", data=json.dumps({"paths": paths, "show": show, "text": text}).encode(),
             headers={"X-STP-Local": "1", "Content-Type": "application/json"}, method="POST")
         urllib.request.urlopen(req, timeout=5).read()
         return True
@@ -461,9 +461,14 @@ def main():
     paths, tray_only, sending = parse_args(argv)
     import storeapi
     tray_only = tray_only or storeapi.launched_at_startup()
+    shared_text = ""
+    share = storeapi.take_share()  # launched from Windows' Share menu?
+    if share:
+        paths, shared_text = paths + share[0], share[1]
+        sending = True
     show = not tray_only and not sending
 
-    if forward_to_running(paths, show):
+    if forward_to_running(paths, show, shared_text):
         return
 
     if wininteg.needs_install() and "--portable" not in argv and not core.PACKAGED:
@@ -494,7 +499,7 @@ def main():
         except OSError:
             # Another copy may be starting at the same moment (multi-select in Explorer).
             time.sleep(0.5)
-            if forward_to_running(paths, show):
+            if forward_to_running(paths, show, shared_text):
                 return
     if server is None:
         ctypes.windll.user32.MessageBoxW(
@@ -517,6 +522,8 @@ def main():
         threading.Thread(target=integrate, daemon=True).start()
 
     store.add_paths(paths)
+    if shared_text:
+        store.set_clip_for_phone(shared_text)
     app = App(store, show_window=show or store.first_run or (sending and not store.phone_connected()))
     app_ref["app"] = app
     try:

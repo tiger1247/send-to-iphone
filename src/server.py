@@ -119,6 +119,8 @@ def make_server(store, on_received, on_clip, on_local_show, on_local_quit=lambda
                 if path == "/local/add":
                     data = json.loads(self._body(10_000_000) or b"{}")
                     store.add_paths(data.get("paths", []))
+                    if data.get("text"):
+                        store.set_clip_for_phone(data["text"])
                     if data.get("show"):
                         on_local_show()
                     return self._json({"ok": True})

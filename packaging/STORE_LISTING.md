@@ -13,7 +13,7 @@ PhoneDrop is the fastest way to move files between your Windows PC and your iPho
 
 Scan the QR code once with your iPhone camera. From then on:
 
-• PC → iPhone: drag files onto PhoneDrop, or right-click any file and choose "Send to iPhone". Tap Save on your iPhone and the file goes to the Files app. Photos and videos can go straight to Photos.
+• PC → iPhone: drag files onto PhoneDrop, or right-click any file → Share → PhoneDrop (it works from the Photos app too). Tap Save on your iPhone and the file goes to the Files app. Photos and videos can go straight to Photos.
 • iPhone → PC: pick photos, videos or documents on your iPhone and they appear on your PC in Downloads\From iPhone.
 • Shared clipboard: send a link or some text from one device and paste it on the other.
 • Big files are fine: full-quality videos, with progress bars.
@@ -37,7 +37,7 @@ First release.
 ## Product features (one per line, up to 20)
 Send files from PC to iPhone without installing an app
 Send photos and videos from iPhone to PC
-Right-click any file → Send to iPhone
+Right-click any file → Share → PhoneDrop
 Drag and drop files and folders
 Shared clipboard between PC and iPhone
 Works over your local Wi-Fi: no cloud, no account
@@ -76,4 +76,12 @@ Complete the IARC questionnaire: no violence, no user-generated content shared p
 PhoneDrop is a full-trust desktop app (runFullTrust) that runs a small local HTTP server on port 8765 so the user's iPhone can connect over the local network (privateNetworkClientServer + a private-profile firewall rule). To test: launch PhoneDrop, scan the QR code with any phone on the same Wi-Fi (or open the shown link in another device's browser), then send a file either way. No login is required.
 
 ## Screenshots
-Use the 1920×1080 images in `packaging/store-assets/` (the Store needs at least 1366×768).
+Upload in this order (Partner Center → Store listings → Screenshots → Desktop):
+1. `packaging/store-assets/1-send-to-iphone.png`
+2. `packaging/store-assets/2-iphone-to-pc.png`
+3. `packaging/store-assets/3-private.png`
+
+All are 1920×1080 (the Store needs at least 1366×768). Rebuild them with `build\venv\Scripts\python packaging\make_store_images.py`.
+
+## Store logo (optional, Store listings → Store logos → 1:1 box art)
+`packaging/store-assets/logo-300.png`

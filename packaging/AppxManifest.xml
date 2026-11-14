@@ -49,18 +49,17 @@
           <desktop:StartupTask TaskId="PhoneDropStartup" Enabled="true" DisplayName="PhoneDrop" />
         </desktop:Extension>
 
-        <!-- Right-click a file → "Send to iPhone (PhoneDrop)" (under "Show more options" on Windows 11). -->
-        <uap3:Extension Category="windows.fileTypeAssociation">
-          <uap3:FileTypeAssociation Name="phonedrop.files">
-            <uap:DisplayName>Files for PhoneDrop</uap:DisplayName>
+        <!-- Right-click any file → Share → PhoneDrop (also from Photos and any app's Share button). -->
+        <uap:Extension Category="windows.shareTarget">
+          <uap:ShareTarget Description="Send to your iPhone with PhoneDrop">
             <uap:SupportedFileTypes>
-{{FILE_TYPES}}
+              <uap:SupportsAnyFileType />
             </uap:SupportedFileTypes>
-            <uap2:SupportedVerbs>
-              <uap3:Verb Id="sendtoiphone" Parameters="-m main --send &quot;%1&quot;">Send to iPhone (PhoneDrop)</uap3:Verb>
-            </uap2:SupportedVerbs>
-          </uap3:FileTypeAssociation>
-        </uap3:Extension>
+            <uap:DataFormat>StorageItems</uap:DataFormat>
+            <uap:DataFormat>Text</uap:DataFormat>
+            <uap:DataFormat>URI</uap:DataFormat>
+          </uap:ShareTarget>
+        </uap:Extension>
       </Extensions>
     </Application>
   </Applications>

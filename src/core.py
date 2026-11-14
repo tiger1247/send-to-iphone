@@ -24,7 +24,7 @@ def is_packaged():
 
 PACKAGED = is_packaged()
 # The Store build is branded PhoneDrop (Apple doesn't allow "iPhone" as an app's main name).
-APP_NAME = "PhoneDrop" if PACKAGED else "Send to iPhone"
+APP_NAME = "PhoneDrop" if PACKAGED or os.environ.get("STP_BRAND") == "PhoneDrop" else "Send to iPhone"
 APP_ID = "SendToiPhone"
 DEFAULT_PORT = 8765
 

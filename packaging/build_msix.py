@@ -11,7 +11,7 @@ store.json (values from Partner Center → your app → Product identity):
 
 The package bundles a private copy of the installed (python.org, PSF-signed) Python plus
 the libraries from build\\venv, so it needs no Python on the user's PC. Output:
-    %LOCALAPPDATA%\\PhoneDrop-build\\layout\\   loose files (Add-AppxPackage -Register for testing)
+    %USERPROFILE%\\PhoneDrop-build\\layout\\   loose files (Add-AppxPackage -Register for testing)
     build\\PhoneDrop.msix  the file you upload to Partner Center (the Store signs it)
 """
 import argparse
@@ -27,19 +27,13 @@ import sysconfig
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "src")
 BUILD = os.path.join(ROOT, "build")
-# Built outside OneDrive: syncing locks thousands of small files mid-build.
-LAYOUT = os.path.join(os.environ.get("LOCALAPPDATA", BUILD), "PhoneDrop-build", "layout")
+# Built outside OneDrive (syncing locks thousands of small files mid-build) and outside AppData
+# (sandboxed/packaged tools get AppData redirected, which Windows' installer can't see).
+LAYOUT = os.path.join(os.path.expanduser("~"), "PhoneDrop-build", "layout")
 VENV_SITE = os.path.join(BUILD, "venv", "Lib", "site-packages")
 sys.path.insert(0, SRC)
 
 APP_FILES = ["main.py", "core.py", "server.py", "wininteg.py", "storeapi.py", "icon.py", "phone.html", "app.ico"]
-
-# Extensions that get the right-click "Send to iPhone (PhoneDrop)" entry.
-FILE_TYPES = """.jpg .jpeg .png .heic .heif .gif .webp .bmp .tif .tiff .raw .dng
-.mp4 .mov .m4v .avi .mkv .webm .wmv .3gp
-.mp3 .m4a .wav .aac .flac .ogg .wma
-.pdf .doc .docx .xls .xlsx .ppt .pptx .txt .rtf .csv .md .odt .ods .odp .pages .numbers .key
-.zip .rar .7z .epub .ics .vcf .apk .ipa""".split()
 
 STDLIB_SKIP = {"test", "idlelib", "turtledemo", "ensurepip", "venv", "site-packages", "__pycache__",
                "pydoc_data", "lib2to3", "tkinter/test", "unittest/test"}
@@ -105,10 +99,8 @@ def make_assets(dest):
 def write_manifest(cfg):
     with open(os.path.join(ROOT, "packaging", "AppxManifest.xml"), encoding="utf-8") as f:
         xml = f.read()
-    types = "\n".join(f"              <uap:FileType>{t}</uap:FileType>" for t in FILE_TYPES)
     for key, val in (("IDENTITY_NAME", cfg["identity_name"]), ("PUBLISHER", cfg["publisher"]),
-                     ("PUBLISHER_DISPLAY", cfg["publisher_display"]), ("VERSION", cfg["version"]),
-                     ("FILE_TYPES", types)):
+                     ("PUBLISHER_DISPLAY", cfg["publisher_display"]), ("VERSION", cfg["version"])):
         xml = xml.replace("{{" + key + "}}", val)
     assert "{{" not in xml, "unfilled placeholder in manifest"
     with open(os.path.join(LAYOUT, "AppxManifest.xml"), "w", encoding="utf-8") as f:
