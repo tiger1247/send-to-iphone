@@ -20,7 +20,7 @@ APP = os.path.join(DEST, "app")
 VENV = os.path.join(DEST, "venv")
 PY = os.path.join(VENV, "Scripts", "python.exe")
 PYW = os.path.join(VENV, "Scripts", "pythonw.exe")
-FILES = ["main.py", "core.py", "server.py", "wininteg.py", "icon.py", "phone.html", "app.ico"]
+FILES = ["main.py", "core.py", "server.py", "wininteg.py", "storeapi.py", "icon.py", "phone.html", "app.ico"]
 DEPS = ["pystray==0.19.5", "pillow==13.0.0", "qrcode==8.2", "tkinterdnd2==0.7.0"]
 NO_WINDOW = 0x08000000
 
