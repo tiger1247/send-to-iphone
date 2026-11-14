@@ -198,7 +198,7 @@ class Store:
                 "v": self.version,
                 "files": [{k: f[k] for k in ("id", "name", "size", "added")} for f in files],
                 "clip": dict(self.clip),
-                "pc": socket.gethostname(),
+                "pc": os.environ.get("STP_PC_NAME") or socket.gethostname(),
             }
 
     # ---- clipboard / misc ---------------------------------------------

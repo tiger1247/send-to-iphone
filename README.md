@@ -2,6 +2,23 @@
 
 Move files between a Windows PC and an iPhone over Wi-Fi. **Nothing to install on the iPhone.** Scan a QR code once and Safari becomes your transfer page.
 
+## Screenshots
+
+**Windows app**: scan the QR code once, then drag files in (or right-click → Send to iPhone)
+
+![Send to iPhone desktop app](docs/screenshots/desktop-app.png)
+
+<table>
+  <tr>
+    <td align="center"><b>On the iPhone: files from your PC</b></td>
+    <td align="center"><b>Sending photos to the PC + shared clipboard</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/iphone-files.jpg" width="300" alt="iPhone page listing files sent from the PC"></td>
+    <td><img src="docs/screenshots/iphone-upload.jpg" width="300" alt="iPhone page uploading photos to the PC"></td>
+  </tr>
+</table>
+
 ## Features
 
 - **PC → iPhone**: drag files onto the app, or right-click any file or folder in Explorer → **Send to iPhone** (folders are sent as `.zip`)
