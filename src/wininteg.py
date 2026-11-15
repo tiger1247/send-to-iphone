@@ -12,7 +12,7 @@ import core
 from core import APP_ID, APP_NAME
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-MENU_KEYS = [r"Software\Classes\*\shell\SendToiPhone", r"Software\Classes\Directory\shell\SendToiPhone"]
+MENU_KEYS = [rf"Software\Classes\*\shell\{APP_ID}", rf"Software\Classes\Directory\shell\{APP_ID}"]
 INSTALL_DIR = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", APP_ID)
 START_MENU = os.path.join(os.environ.get("APPDATA", ""), r"Microsoft\Windows\Start Menu\Programs")
 SENDTO = os.path.join(os.environ.get("APPDATA", ""), r"Microsoft\Windows\SendTo")
@@ -57,7 +57,7 @@ def set_explorer_menu(enabled):
                 except OSError:
                     pass
     # "Send to" submenu entry: handles multi-select in a single launch.
-    lnk = os.path.join(SENDTO, "iPhone (Send to iPhone).lnk")
+    lnk = os.path.join(SENDTO, f"iPhone ({APP_NAME}).lnk")
     if enabled:
         make_shortcut(lnk, ["--send"])
     else:

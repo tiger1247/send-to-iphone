@@ -454,6 +454,8 @@ def main():
 
     if "--uninstall" in argv:
         wininteg.uninstall()
+        if "--quiet" in argv:
+            return
         ctypes.windll.user32.MessageBoxW(0, "Removed the right-click menu, startup entry and Start Menu shortcut.\n"
                                             "You can now delete the program folder.", APP_NAME, 0x40)
         return
@@ -514,8 +516,10 @@ def main():
             wininteg.set_startup(store.startup)
             if store.explorer_menu:
                 wininteg.set_explorer_menu(True)
-            if store.first_run and wininteg.frozen():
+            if store.first_run and (wininteg.frozen() or core.DIRECT):
                 wininteg.create_start_menu_entry()
+                if core.DIRECT:
+                    wininteg.create_desktop_shortcut()
         except Exception as e:
             print("integration error:", e, file=sys.stderr)
     if "--no-integrate" not in argv and not core.PACKAGED:

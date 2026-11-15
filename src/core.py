@@ -23,9 +23,11 @@ def is_packaged():
 
 
 PACKAGED = is_packaged()
-# The Store build is branded PhoneDrop (Apple doesn't allow "iPhone" as an app's main name).
-APP_NAME = "PhoneDrop" if PACKAGED or os.environ.get("STP_BRAND") == "PhoneDrop" else "Send to iPhone"
-APP_ID = "SendToiPhone"
+# The direct-download build (Gumroad / Lemon Squeezy) ships a DIRECT_EDITION marker next to main.py.
+DIRECT = os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "DIRECT_EDITION"))
+# Store and direct builds are branded PhoneDrop (Apple doesn't allow "iPhone" as an app's main name).
+APP_NAME = "PhoneDrop" if PACKAGED or DIRECT or os.environ.get("STP_BRAND") == "PhoneDrop" else "Send to iPhone"
+APP_ID = "PhoneDrop" if DIRECT else "SendToiPhone"
 DEFAULT_PORT = 8765
 
 APPDATA_DIR = os.environ.get("STP_DATA_DIR") or os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), APP_ID)
